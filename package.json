@@ -1,0 +1,45 @@
+{
+  "name": "chatgpt-account-switcher",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "node scripts/licenses.mjs && vite build",
+    "tauri": "tauri",
+    "test": "playwright test",
+    "test:rust": "cargo test --locked --manifest-path src-tauri/Cargo.toml",
+    "lint:rust": "cargo clippy --locked --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings",
+    "format:check": "cargo fmt --manifest-path src-tauri/Cargo.toml -- --check",
+    "release:validate": "node scripts/release.mjs validate",
+    "release:build": "node scripts/release.mjs build",
+    "release:manifest": "node scripts/release.mjs manifest",
+    "version:prepare": "node scripts/release.mjs bump",
+    "signing:setup": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/setup-signing.ps1",
+    "licenses:generate": "node scripts/licenses.mjs",
+    "test:release": "node --test scripts/release.test.mjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.64.1",
+    "@tailwindcss/vite": "^4.0.0",
+    "@tauri-apps/cli": "^2.0.0",
+    "tailwindcss": "^4.0.0",
+    "vite": "^7.0.0"
+  },
+  "dependencies": {
+    "@fontsource/comfortaa": "^5.3.0",
+    "@fontsource/nunito": "^5.3.0",
+    "dompurify": "^3.4.17",
+    "marked": "^18.1.3"
+  },
+  "description": "An independent Windows companion for saving and switching Codex accounts",
+  "license": "MIT",
+  "author": "nickfouf",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nickfouf/ChatGPTAccountSwitcher.git"
+  },
+  "engines": {
+    "node": ">=20.19"
+  }
+}

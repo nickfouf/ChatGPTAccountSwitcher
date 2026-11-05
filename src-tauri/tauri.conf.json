@@ -1,0 +1,59 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "ChatGPT Account Switcher",
+  "version": "0.1.0",
+  "identifier": "local.codexharbor.desktop",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "windows": [
+      {
+        "title": "ChatGPT Account Switcher",
+        "width": 1160,
+        "height": 790,
+        "minWidth": 640,
+        "minHeight": 600
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; style-src 'self' 'unsafe-inline'; connect-src ipc: http://ipc.localhost; img-src 'self' data:"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["nsis"],
+    "createUpdaterArtifacts": true,
+    "shortDescription": "Manage and switch your Codex accounts",
+    "longDescription": "An independent Windows companion for securely saving and switching Codex accounts, with encrypted local storage and signed app updates.",
+    "category": "Utility",
+    "publisher": "nickfouf",
+    "copyright": "Copyright © 2026 nickfouf",
+    "license": "MIT",
+    "licenseFile": "../LICENSE",
+    "icon": ["icons/32x32.png", "icons/128x128.png", "icons/128x128@2x.png", "icons/icon.ico"],
+    "windows": {
+      "webviewInstallMode": { "type": "downloadBootstrapper", "silent": true },
+      "nsis": {
+        "installMode": "currentUser",
+        "languages": ["English", "Greek"],
+        "customLanguageFiles": { "Greek": "installer/Greek.nsh" },
+        "displayLanguageSelector": true,
+        "startMenuFolder": "ChatGPT Account Switcher",
+        "installerIcon": "icons/icon.ico"
+      }
+    }
+  },
+  "plugins": {
+    "updater": {
+      "requireSignedVersion": true,
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDRDMDkxOUM3MDZFNzQ4MTYKUldRV1NPY0d4eGtKVEtPNFhkUVhoallWakpGSUtCbmRvVWhia0d6SkVsY0xRRFlydlZsUER2dTYK",
+      "endpoints": ["https://github.com/nickfouf/ChatGPTAccountSwitcher/releases/latest/download/latest.json"],
+      "windows": { "installMode": "passive" }
+    }
+  }
+}

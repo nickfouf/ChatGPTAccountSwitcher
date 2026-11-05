@@ -1,0 +1,9 @@
+{
+  "tourCurrentTitle":"这是你当前的账号","tourCurrentBody":"已连接到 Codex 的账号会自动显示在这里。","tourAddTitle":"在这里添加其他账号","tourAddBody":"此按钮会在浏览器中打开登录页面。当前账号会保持连接。","tourSwitchTitle":"使用此按钮切换","tourSwitchBody":"请先保存工作。Codex 将使用此账号重新启动。","tourRemoveTitle":"在这里移除已保存的账号","tourRemoveBody":"只会移除已保存的账号。你的聊天和 Codex 登录状态会保留。",
+  "accounts":"你的账号","subtitle":"选择账号，即刻开始。","add":"添加账号","current":"当前","now":"当前 Codex 账号","noConnection":"没有已连接的账号","open":"打开 Codex","remove":"移除","removeAccount":"移除账号","switch":"切换账号","signin":"重新登录","ready":"可以切换","saved":"已保存","checking":"正在检查连接…","renewing":"正在刷新连接…","unavailable":"暂时无法获取用量","five":"5 小时","week":"每周","left":"剩余","reset":"重置时间","loading":"正在查找你的账号…",
+  "emptyTitle":"在这里管理你的账号","emptyBody":"添加一个账号即可开始。其余的交给我们。","auto":"账号和连接会自动更新。","tour":"快速指南","settings":"设置","language":"语言","cancel":"取消","close":"关闭",
+  "switchTitle":"切换到 {name}？","switchBody":"Codex 将关闭并重新打开。请先保存正在进行的工作。","removeTitle":"移除 {name}？","removeBody":"这会从此应用中移除已保存的账号。你的聊天和当前 Codex 登录状态会保留。","removeConfirm":"移除账号","switchConfirm":"已保存，切换。","browserTitle":"完成登录","browserBody":"请在浏览器中继续。当前 Codex 账号会保持连接。","recover":"恢复连接","recoveryBody":"上次切换被中断。请恢复之前的连接以继续。",
+  "working":"正在处理…","switching":"正在切换账号…","removing":"正在移除账号…","adding":"正在打开登录页面…","restoring":"正在恢复连接…","doneSwitch":"账号已切换。","doneRemove":"账号已移除。","doneRecover":"连接已恢复。","doneCancel":"登录已取消。",
+  "error":"操作失败，请重试。","networkError":"暂时无法连接。请检查网络后重试。","loginError":"请重新登录此账号。","wrongAccount":"这是另一个账号。请选择要重新连接的账号。","cliError":"请先打开一次已安装的 Codex 应用，再尝试添加账号。","autoAdded":"已从 Codex 添加你的账号。","loginSaved":"账号已添加，可以切换了！","loginFailed":"登录未完成。请重新尝试添加账号。","loginTimeout":"登录超时。请重新尝试添加账号。","syncError":"无法更新账号。将自动重试。","appOnly":"请打开 ChatGPT Account Switcher 来使用你的账号。",
+  "skip":"跳过指南","next":"下一步","back":"上一步","finish":"开始吧！","step":"第 {n} 步，共 {total} 步","independent":"用于 Codex 账号的独立应用","available":"可用额度","systemLanguage":"使用电脑的语言","skipAccounts":"跳转到账号"
+}

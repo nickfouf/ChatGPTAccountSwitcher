@@ -1,0 +1,16 @@
+{
+  "tourCurrentTitle":"Oto Twoje bieżące konto",
+  "tourCurrentBody":"Konto połączone z Codex pojawia się tutaj automatycznie.",
+  "tourAddTitle":"Tutaj dodasz kolejne konto",
+  "tourAddBody":"Ten przycisk otwiera logowanie w przeglądarce. Bieżące konto pozostaje połączone.",
+  "tourSwitchTitle":"Zmień konto tym przyciskiem",
+  "tourSwitchBody":"Najpierw zapisz pracę. Codex uruchomi się ponownie z tym kontem.",
+  "tourRemoveTitle":"Tutaj usuniesz zapisane konto",
+  "tourRemoveBody":"Usuwane jest tylko zapisane konto. Czaty i logowanie do Codex pozostają bez zmian.",
+  "accounts":"Twoje konta","subtitle":"Wybierz konto i zacznij.","add":"Dodaj konto","current":"Bieżące","now":"Teraz w Codex","noConnection":"Brak połączonego konta","open":"Otwórz Codex","remove":"Usuń","removeAccount":"Usuń konto","switch":"Zmień konto","signin":"Zaloguj się ponownie","ready":"Gotowe do zmiany","saved":"Zapisane","checking":"Sprawdzanie połączenia…","renewing":"Odnawianie połączenia…","unavailable":"Dane użycia są chwilowo niedostępne","five":"5 godzin","week":"Tydzień","left":"pozostało","reset":"Odnowienie","loading":"Wyszukiwanie kont…",
+  "emptyTitle":"Tu jest miejsce na Twoje konta","emptyBody":"Dodaj konto, aby zacząć. Zajmiemy się resztą.","auto":"Konta i połączenia aktualizują się automatycznie.","tour":"Krótki przewodnik","settings":"Ustawienia","language":"Język","cancel":"Anuluj","close":"Zamknij",
+  "switchTitle":"Przełączyć na {name}?","switchBody":"Codex zostanie zamknięty i otwarty ponownie. Najpierw zapisz pracę.","removeTitle":"Usunąć {name}?","removeBody":"Zapisane konto zostanie usunięte z tej aplikacji. Czaty i bieżące logowanie do Codex pozostaną bez zmian.","removeConfirm":"Usuń konto","switchConfirm":"Zapisano. Zmień konto.","browserTitle":"Dokończ logowanie","browserBody":"Kontynuuj w przeglądarce. Bieżące konto Codex pozostaje połączone.","recover":"Przywróć połączenie","recoveryBody":"Ostatnia zmiana została przerwana. Przywróć poprzednie połączenie, aby kontynuować.",
+  "working":"Przetwarzanie…","switching":"Zmienianie konta…","removing":"Usuwanie konta…","adding":"Otwieranie logowania…","restoring":"Przywracanie połączenia…","doneSwitch":"Konto zmienione.","doneRemove":"Konto usunięte.","doneRecover":"Połączenie przywrócone.","doneCancel":"Logowanie anulowane.",
+  "error":"Nie udało się. Spróbuj ponownie.","networkError":"Nie można się połączyć. Sprawdź internet i spróbuj ponownie.","loginError":"Zaloguj się ponownie na to konto.","wrongAccount":"To inne konto. Wybierz konto, które chcesz ponownie połączyć.","cliError":"Otwórz raz zainstalowaną aplikację Codex i spróbuj dodać konto ponownie.","autoAdded":"Dodano Twoje konto z Codex.","loginSaved":"Konto dodane. Możesz już zmieniać konta!","loginFailed":"Logowanie nie zostało ukończone. Spróbuj dodać konto ponownie.","loginTimeout":"Upłynął czas logowania. Spróbuj dodać konto ponownie.","syncError":"Nie udało się zaktualizować kont. Ponawiamy automatycznie.","appOnly":"Otwórz ChatGPT Account Switcher, aby korzystać ze swoich kont.",
+  "skip":"Pomiń przewodnik","next":"Dalej","back":"Wstecz","finish":"Zaczynamy!","step":"{n} z {total}","independent":"Niezależna aplikacja do kont Codex","available":"Dostępne użycie","systemLanguage":"Używaj języka komputera","skipAccounts":"Przejdź do kont"
+}
