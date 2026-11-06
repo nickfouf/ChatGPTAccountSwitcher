@@ -206,6 +206,37 @@ if(-not $found){throw 'Codex did not start'}
     Ok(())
 }
 
+pub fn vault_root() -> Result<std::path::PathBuf, String> {
+    std::env::var_os("LOCALAPPDATA")
+        .map(|root| std::path::PathBuf::from(root).join("CodexHarbor"))
+        .ok_or_else(|| "LOCALAPPDATA is unavailable.".into())
+}
+
+pub fn find_cli() -> Result<std::path::PathBuf, String> {
+    let root = std::path::PathBuf::from(std::env::var("LOCALAPPDATA").unwrap_or_default())
+        .join("OpenAI/Codex/bin");
+    let mut paths: Vec<_> = std::fs::read_dir(root)
+        .into_iter()
+        .flatten()
+        .filter_map(|entry| entry.ok())
+        .map(|entry| entry.path().join("codex.exe"))
+        .filter(|path| path.is_file())
+        .collect();
+    paths.sort_by_key(|path| {
+        std::fs::metadata(path)
+            .and_then(|meta| meta.modified())
+            .ok()
+    });
+    paths.pop().ok_or_else(|| {
+        "Could not find the official Codex CLI. Open the installed Codex app first.".into()
+    })
+}
+
+pub fn show_error(error: &str) {
+    let message = error.replace('\'', "''");
+    let _ = ps(&format!("Add-Type -AssemblyName PresentationFramework;[System.Windows.MessageBox]::Show('{}','ChatGPT Account Switcher')", message));
+}
+
 #[cfg(test)]
 mod language_tests {
     #[test]

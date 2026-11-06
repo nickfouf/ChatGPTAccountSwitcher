@@ -23,7 +23,7 @@ export function createUpdater({ language, blocked, onChange }) {
   const invoke = window.__TAURI__?.core?.invoke;
   const host = document.createElement('div');
   document.body.append(host);
-  const state = { version: '', available: null, phase: 'checking', open: false, checking: false, installing: false, automatic: readPreference('switcher.autoUpdates', '1') !== '0' };
+  const state = { inAppUpdates: true, version: '', available: null, phase: 'checking', open: false, checking: false, installing: false, automatic: readPreference('switcher.autoUpdates', '1') !== '0' };
   let pending = false, trigger = null, retryInstall = false, lastCheck = 0;
   const t = key => updateCopy[language()]?.[key] ?? updateCopy.en[key];
   const notify = () => onChange();
@@ -36,7 +36,7 @@ export function createUpdater({ language, blocked, onChange }) {
   function render() {
     if (!state.open) return;
     const phase = state.phase, available = state.available;
-    const title = {checking:'checking', current:'currentTitle', available:'availableTitle', error:'errorTitle', downloading:'downloadTitle', installing:'installTitle', whatsnew:'whatsNew'}[phase];
+    const title = {package:'packageTitle',checking:'checking', current:'currentTitle', available:'availableTitle', error:'errorTitle', downloading:'downloadTitle', installing:'installTitle', whatsnew:'whatsNew'}[phase];
     const hasNotes = ['available','whatsnew'].includes(phase);
     const notes = phase === 'whatsnew' ? state.notes : relevantNotes(available?.notes, state.version, available?.version);
     const html = hasNotes ? DOMPurify.sanitize(marked.parse(notes || t('noNotes'), {async:false}), {
@@ -45,15 +45,17 @@ export function createUpdater({ language, blocked, onChange }) {
     host.innerHTML = `<dialog class="update-dialog" lang="${updateCopy[language()] ? language() : 'en'}" dir="${direction(language())}" aria-labelledby="update-title" aria-describedby="update-description">
       <div class="update-header"><span class="update-symbol" aria-hidden="true">${['current','whatsnew'].includes(phase)?'✓':'↓'}</span><span class="update-eyebrow">ChatGPT Account Switcher</span></div>
       <h2 id="update-title">${t(title)}</h2>
-      <p id="update-description">${t({checking:'checkingBody',current:'currentBody',available:'availableBody',error:'errorBody',downloading:'downloadBody',installing:'installBody',whatsnew:'whatsNewBody'}[phase])}</p>
+      <p id="update-description">${t({package:'packageBody',checking:'checkingBody',current:'currentBody',available:'availableBody',error:'errorBody',downloading:'downloadBody',installing:'installBody',whatsnew:'whatsNewBody'}[phase])}</p>
       <div class="update-versions"><span>${t('installed')} <strong>v${escape(state.version || '…')}</strong></span>${available && phase!=='whatsnew'?`<span aria-hidden="true">→</span><span class="update-new-version">v${escape(available.version)}</span>`:''}</div>
       ${hasNotes?`<section class="release-notes" dir="auto" tabindex="0" aria-label="${t('releaseNotes')}">${html}</section>`:''}
       ${['downloading','installing'].includes(phase)?`<div class="update-progress-area" role="status"><progress aria-label="${t('downloadProgress')}"></progress><span class="update-progress-text">${t(phase==='installing'?'installBody':'downloadBody')}</span></div>`:''}
       ${phase==='error'?`<p class="update-error" role="alert">${t(retryInstall?'installError':'checkError')}</p>`:''}
+      ${phase==='package'&&state.downloadError?`<p class="update-error" role="alert">${t('packageError')}</p>`:''}
       <div class="update-actions">
+        ${phase==='package'?`<button class="btn primary" data-update="downloads">${t('packageAction')}</button>`:''}
         ${phase==='available'?`<button class="btn primary" data-update="install">${t('install')}</button>`:phase==='error'?`<button class="btn primary" data-update="retry">${t('retry')}</button>`:''}
         ${!state.installing?`<button class="btn secondary" data-update="close">${t(phase==='available'?'later':'close')}</button>`:''}
-      </div><p class="update-footnote">${t('signed')}</p>
+      </div><p class="update-footnote">${t(phase==='package'?'packageFootnote':'signed')}</p>
     </dialog>`;
     const dialog = host.querySelector('dialog');
     dialog.addEventListener('cancel', event => { event.preventDefault(); close(); });
@@ -72,7 +74,10 @@ export function createUpdater({ language, blocked, onChange }) {
     lastCheck = Date.now();
     try {
       if (!invoke) throw Error('Desktop application required');
-      if (!state.version) state.version = (await invoke('app_info')).version;
+      if (!state.version) {
+        const info = await invoke('app_info'); state.version = info.version; state.inAppUpdates = info.inAppUpdates !== false;
+      }
+      if (!state.inAppUpdates) { state.phase = 'package'; if (manual) render(); return; }
       const result = await invoke('check_for_updates');
       state.available = result.update;
       state.phase = state.available ? 'available' : 'current';
@@ -88,7 +93,7 @@ export function createUpdater({ language, blocked, onChange }) {
     state.installing = true; state.phase = 'downloading'; render(); notify();
     try {
       await invoke('install_update');
-      // Successful Windows installation exits this process. Retain the protected UI.
+      // Successful installation restarts or exits this process. Retain the protected UI.
       state.phase = 'installing'; render();
     } catch {
       state.installing = false; state.phase = 'error'; retryInstall = true; render(); notify();
@@ -97,13 +102,14 @@ export function createUpdater({ language, blocked, onChange }) {
   host.addEventListener('click', event => {
     const action = event.target.closest('[data-update]')?.dataset.update;
     if (action === 'close') close();
+    if (action === 'downloads') invoke('open_release_downloads').catch(() => {state.downloadError = true; render();});
     if (action === 'install') install();
     if (action === 'retry') retryInstall ? install() : check(true);
   });
   async function start() {
     if (!invoke) return;
     try {
-      state.version = (await invoke('app_info')).version;
+      const info = await invoke('app_info'); state.version = info.version; state.inAppUpdates = info.inAppUpdates !== false;
       const previous = readPreference('switcher.installedVersion', state.version);
       savePreference('switcher.installedVersion', state.version);
       if (newer(state.version, previous)) {
@@ -122,7 +128,7 @@ export function createUpdater({ language, blocked, onChange }) {
   }
   setInterval(() => {
     if (pending && !blocked() && !state.open && !state.installing) { pending = false; if(state.phase !== 'whatsnew')state.phase = 'available'; open(); return; }
-    if (state.automatic && !state.open && !pending && !blocked() && Date.now()-lastCheck > 6*60*60*1000) check();
+    if (state.inAppUpdates && state.automatic && !state.open && !pending && !blocked() && Date.now()-lastCheck > 6*60*60*1000) check();
   }, 2000);
   return {
     state, start, check: () => state.available ? (state.phase='available', open()) : check(true),

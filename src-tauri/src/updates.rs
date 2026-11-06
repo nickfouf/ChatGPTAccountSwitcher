@@ -38,7 +38,34 @@ fn claim(flag: &AtomicBool) -> Result<Activity<'_>, String> {
 
 #[tauri::command]
 pub fn app_info(app: tauri::AppHandle) -> Value {
-    json!({"version": app.package_info().version.to_string()})
+    json!({"version": app.package_info().version.to_string(), "inAppUpdates": in_app_updates()})
+}
+
+fn in_app_updates() -> bool {
+    !cfg!(target_os = "linux")
+        || std::env::var_os("APPIMAGE").is_some_and(|value| !value.is_empty())
+}
+
+#[tauri::command]
+pub fn open_release_downloads() -> Result<(), String> {
+    #[cfg(target_os = "linux")]
+    {
+        let mut child = std::process::Command::new("xdg-open")
+            .arg("https://github.com/nickfouf/ChatGPTAccountSwitcher/releases/latest")
+            .stdin(std::process::Stdio::null())
+            .stdout(std::process::Stdio::null())
+            .stderr(std::process::Stdio::null())
+            .spawn()
+            .map_err(|_| "Could not open GitHub Releases in your browser.")?;
+        std::thread::spawn(move || {
+            let _ = child.wait();
+        });
+        Ok(())
+    }
+    #[cfg(not(target_os = "linux"))]
+    {
+        Err("Package downloads are only used for Linux package installations.".into())
+    }
 }
 
 #[tauri::command]
@@ -46,6 +73,9 @@ pub async fn check_for_updates(
     app: tauri::AppHandle,
     state: tauri::State<'_, Updates>,
 ) -> Result<Value, String> {
+    if !in_app_updates() {
+        return Err("Update this Linux installation with a new DEB/RPM package, or use AppImage for in-app updates.".into());
+    }
     let _checking = claim(&state.checking)?;
     let update = app
         .updater_builder()
@@ -79,6 +109,9 @@ pub async fn install_update(
     app: tauri::AppHandle,
     state: tauri::State<'_, Updates>,
 ) -> Result<(), String> {
+    if !in_app_updates() {
+        return Err("Install a new DEB/RPM package to update this Linux installation.".into());
+    }
     // The same gate protects account actions, including browser sign-in and switching.
     let _activity = state.begin()?;
     let store = app.state::<Arc<Mutex<Store>>>().inner().clone();
@@ -114,11 +147,19 @@ pub async fn install_update(
         .await
         .map_err(|_| "Download or signature verification failed. Please retry.".to_string())?;
     let _ = app.emit("update-progress", json!({"phase":"installing"}));
-    // On Windows the verified installer takes over, closes this app, and relaunches it.
+    // Windows installers relaunch the app; Unix installs require an explicit restart.
     tauri::async_runtime::spawn_blocking(move || update.install(bytes))
         .await
         .map_err(|_| "Could not start the installer.")?
-        .map_err(|_| "Could not install the update. Please retry.".to_string())
+        .map_err(|_| "Could not install the update. Please retry.".to_string())?;
+    #[cfg(target_os = "windows")]
+    {
+        Ok(())
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        app.restart()
+    }
 }
 
 #[cfg(test)]

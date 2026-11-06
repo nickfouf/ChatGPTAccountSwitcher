@@ -14,7 +14,7 @@ const notes = `## [0.3.0] - 2026-11-05
 - Old changes that should be hidden.
 `;
 
-async function open(page, { available=true, error=false, installError=false, tour=false, previous=null, automatic=false }={}) {
+async function open(page, { available=true, error=false, installError=false, tour=false, previous=null, automatic=false, inAppUpdates=true }={}) {
   await page.addInitScript(options => {
     localStorage.setItem('switcher.autoUpdates', options.automatic?'1':'0');
     if (!options.tour) localStorage.setItem('switcher.tourSeen','1');
@@ -24,7 +24,7 @@ async function open(page, { available=true, error=false, installError=false, tou
     window.__TAURI__={core:{invoke:async(command,args)=>{
       if(command==='system_languages')return ['en-US'];
       window.updateCalls.push({command,args});
-      if(command==='app_info')return {version:'0.1.0'};
+      if(command==='app_info')return {version:'0.1.0',inAppUpdates:options.inAppUpdates};
       if(command==='check_for_updates'){
         if(window.checkError)throw Error('offline');
         return {update:options.available?{version:'0.3.0',currentVersion:'0.1.0',notes:options.notes,date:1793880000}:null};
@@ -39,7 +39,7 @@ async function open(page, { available=true, error=false, installError=false, tou
       if(command==='action'&&args.command==='cancel_login')window.snapshot.login=null;
       return {};
     }},event:{listen:async(name,callback)=>{window.nativeListeners[name]=callback;return ()=>{};}}};
-  }, {available,error,installError,tour,previous,automatic,notes});
+  }, {available,error,installError,tour,previous,automatic,inAppUpdates,notes});
   await page.goto('/');
   await expect(page.locator('h1')).toBeVisible();
 }
@@ -155,4 +155,15 @@ test('successful version change shows the bundled release history once',async({p
   await page.getByRole('button',{name:'Close',exact:true}).click();
   await page.reload();await page.waitForTimeout(2200);
   await expect(page.getByRole('dialog')).toHaveCount(0);
+});
+
+
+test('Linux package installations explain package updates and never offer the AppImage installer',async({page})=>{
+  await open(page,{inAppUpdates:false,automatic:true});await check(page);
+  await expect(page.getByRole('dialog')).toContainText('Update your Linux package');
+  await expect(page.getByRole('dialog')).toContainText('DEB or RPM');
+  await expect(page.getByRole('button',{name:'Update and restart',exact:true})).toHaveCount(0);
+  expect(await page.evaluate(()=>window.updateCalls.some(call=>call.command==='check_for_updates'||call.command==='install_update'))).toBe(false);
+  await page.getByRole('button',{name:'Open downloads',exact:true}).click();
+  expect(await page.evaluate(()=>window.updateCalls.some(call=>call.command==='open_release_downloads'))).toBe(true);
 });

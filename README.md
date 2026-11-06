@@ -1,16 +1,24 @@
 # ChatGPT Account Switcher
 
-A Windows companion for saving and switching Codex accounts, with encrypted local storage, usage summaries, a guided tour, and signed app updates.
+A desktop companion for saving and switching Codex accounts, with encrypted local storage, usage summaries, a guided tour, and signed app updates.
 
 **Independent community project. Not affiliated with, endorsed by, or supported by OpenAI.** ChatGPT, Codex, and OpenAI are trademarks of their respective owners.
 
 ## Install
 
-Download the latest **-setup.exe** from [GitHub Releases](https://github.com/nickfouf/ChatGPTAccountSwitcher/releases/latest). The per-user installer adds a Start menu shortcut and uninstaller and installs Microsoft WebView2 if missing. Supported release target: Windows 10/11 x64.
+Download a package for your computer from [GitHub Releases](https://github.com/nickfouf/ChatGPTAccountSwitcher/releases/latest):
+
+| Desktop | Package | Build targets |
+| --- | --- | --- |
+| Windows 10/11 | **-setup.exe** | x64 |
+| macOS 13+ | **.dmg** | Apple Silicon |
+| Linux | **.AppImage**, **.deb**, **.rpm** | x64 and ARM64 |
+
+The Windows per-user installer adds a Start menu shortcut and uninstaller and installs Microsoft WebView2 if missing. macOS and Linux are new build targets; native CI, installation, and real-account switching must be validated before their first release. Packages appear after a new release is built and published. See [desktop platform support](docs/PLATFORMS.md) for requirements and setup.
 
 Update packages have cryptographic signatures, but the installer currently has **no Windows Authenticode certificate**. Windows may identify it as an unknown publisher.
 
-Install and open the official Windows Codex app at least once. This application does not install Codex.
+Install and open the official Codex desktop app for your OS at least once. This application does not install Codex. Linux also needs an unlocked Secret Service such as GNOME Keyring or KWallet. Account switching requires Codex file credential storage (`cli_auth_credentials_store = "file"`); explicitly configured keyring, auto, and ephemeral storage are refused without changing your configuration.
 
 ## Use
 
@@ -36,9 +44,9 @@ Update requests go to GitHub and its download infrastructure without account cre
 
 ## Develop
 
-Requirements: Windows 10/11 x64, Node.js 20.19+ (24 recommended), Rust MSVC, Microsoft C++ Build Tools with the Windows SDK, and WebView2. The Rust toolchain is pinned to 1.96.0; CI uses Node 24.
+Requirements: Node.js 20.19+ (24 recommended) and Rust 1.96.0, plus your platform's Tauri prerequisites. Windows needs MSVC, Microsoft C++ Build Tools with the Windows SDK, and WebView2; macOS needs Xcode Command Line Tools; Linux needs GTK/WebKitGTK 4.1 and D-Bus development packages. See [platform development setup](docs/PLATFORMS.md#development). CI uses Node 24 on Windows, macOS, and Linux (x64/ARM64).
 
-Run these commands from PowerShell:
+Run these commands from your terminal:
 
     npm ci
     npm run tauri -- dev
@@ -54,7 +62,7 @@ Verification uses synthetic accounts and temporary test vaults, without signing 
     npm run test:release
     npm run test:installer
 
-The UI tests use Microsoft Edge. Running the real app accesses your local Codex account storage. Compile without packaging with:
+The UI tests use Microsoft Edge on Windows and Chromium on macOS/Linux (`npx playwright install --with-deps chromium`). Running the real app accesses your local Codex account storage. Compile without packaging with:
 
     npm run tauri -- build --no-bundle -- --locked
 
@@ -71,7 +79,7 @@ After committing a new version on `main`, publish it using your GitHub sign-in w
 | Location | Purpose |
 | --- | --- |
 | ui/ | Interface, translations, guide, and update dialog |
-| src-tauri/src/ | Native storage, Windows integration, synchronization, updater |
+| src-tauri/src/ | Native storage, desktop OS integration, synchronization, updater |
 | src-tauri/icons/ | Application and installer icons |
 | tests/ | Browser interface and update tests with synthetic data |
 | scripts/ | Version preparation, signed builds, GitHub secret setup |

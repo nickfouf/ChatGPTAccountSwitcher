@@ -4,7 +4,9 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 process.chdir(fileURLToPath(new URL('..', import.meta.url)));
-const metadata = JSON.parse(execFileSync('cargo', ['metadata','--locked','--format-version','1','--manifest-path','src-tauri/Cargo.toml','--filter-platform','x86_64-pc-windows-msvc'], {encoding:'utf8',maxBuffer:20*1024*1024}));
+const target = process.env.RELEASE_TARGET || ({win32:'x86_64-pc-windows-msvc',darwin:process.arch === 'arm64' ? 'aarch64-apple-darwin' : 'x86_64-apple-darwin',linux:process.arch === 'arm64' ? 'aarch64-unknown-linux-gnu' : 'x86_64-unknown-linux-gnu'})[process.platform];
+if (!target) throw Error('Unsupported desktop platform.');
+const metadata = JSON.parse(execFileSync('cargo', ['metadata','--locked','--format-version','1','--manifest-path','src-tauri/Cargo.toml','--filter-platform',target], {encoding:'utf8',maxBuffer:20*1024*1024}));
 const nodes = new Map(metadata.resolve.nodes.map(node => [node.id,node]));
 const runtime = new Set();
 function visit(id) {
@@ -15,7 +17,7 @@ function visit(id) {
   }
 }
 visit(metadata.resolve.root);
-const sections = ['THIRD-PARTY SOFTWARE NOTICES\n\nThese notices cover locked npm production dependencies and Rust runtime dependencies for the Windows x64 build. Libraries retain their respective licenses. Font licenses are also provided in FONT-LICENSES.txt.'];
+const sections = [`THIRD-PARTY SOFTWARE NOTICES\n\nThese notices cover locked npm production dependencies and Rust runtime dependencies for the ${target} build. Libraries retain their respective licenses. Font licenses are also provided in FONT-LICENSES.txt.`];
 function collect(name, directory, license, url, declaredFile) {
   const files = new Set(fs.readdirSync(directory).filter(file => /^(licen[sc]e|copying|copyright|notice)([._-]|$)/i.test(file)).map(file => path.join(directory,file)));
   if (declaredFile) files.add(path.resolve(directory,declaredFile));

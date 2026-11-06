@@ -2,7 +2,7 @@
 
 Open an issue before a large change. Keep pull requests focused, explain the resulting behavior, and include relevant verification. Use synthetic identities in screenshots and tests.
 
-Requirements: Windows, Node.js 20.19+ (24 recommended), Rust MSVC, Microsoft C++ Build Tools, and WebView2. The Rust toolchain is pinned. Install dependencies with `npm ci`; develop with `npm run tauri -- dev`.
+Requirements: Node.js 20.19+ (24 recommended), the pinned Rust toolchain, and your OS's Tauri prerequisites. See [desktop platform setup](docs/PLATFORMS.md#development) for Windows, macOS, and Linux requirements. Install dependencies with `npm ci`; develop with `npm run tauri -- dev`. Non-Windows UI tests need Chromium (`npx playwright install --with-deps chromium`).
 
 ```powershell
 npm run build

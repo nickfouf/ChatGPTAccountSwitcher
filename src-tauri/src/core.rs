@@ -1,4 +1,4 @@
-use crate::windows;
+use crate::platform;
 use base64::{
     engine::general_purpose::{STANDARD, URL_SAFE_NO_PAD},
     Engine,
@@ -9,9 +9,8 @@ use serde_json::{json, Value};
 use std::{
     collections::{HashMap, HashSet},
     fs,
-    os::windows::process::CommandExt,
     path::{Path, PathBuf},
-    process::{Child, Command, Stdio},
+    process::{Child, Stdio},
     time::{SystemTime, UNIX_EPOCH},
 };
 use zeroize::Zeroizing;
@@ -131,10 +130,10 @@ fn read(path: &Path) -> R<Zeroizing<Vec<u8>>> {
         .map_err(|_| "Αδυναμία ανάγνωσης αρχείου".into())
 }
 fn enc(path: &Path, bytes: &[u8]) -> R<()> {
-    windows::atomic(path, &windows::protect(bytes, ENTROPY, false)?)
+    platform::atomic(path, &platform::protect(bytes, ENTROPY, false)?)
 }
 fn dec(path: &Path) -> R<Zeroizing<Vec<u8>>> {
-    Ok(Zeroizing::new(windows::protect(
+    Ok(Zeroizing::new(platform::protect(
         &read(path)?,
         ENTROPY,
         true,
@@ -162,10 +161,9 @@ fn scrub_temporary_auth(root: &Path) {
 }
 impl Store {
     pub fn new() -> R<Self> {
-        let root = PathBuf::from(std::env::var("LOCALAPPDATA").map_err(|_| "Λείπει LOCALAPPDATA")?)
-            .join("CodexHarbor");
+        let root = platform::vault_root()?;
         fs::create_dir_all(&root).map_err(|_| "Αδυναμία δημιουργίας vault")?;
-        windows::secure_dir(&root)?;
+        platform::secure_dir(&root)?;
         let lock = fs::OpenOptions::new()
             .create(true)
             .truncate(false)
@@ -176,9 +174,8 @@ impl Store {
         lock.try_lock_exclusive()
             .map_err(|_| "Το ChatGPT Account Switcher εκτελείται ήδη. Κλείσε το άλλο παράθυρο.")?;
         scrub_temporary_auth(&root);
-        let home = std::env::var_os("CODEX_HOME")
-            .map(PathBuf::from)
-            .unwrap_or_else(|| PathBuf::from(std::env::var("USERPROFILE").unwrap()).join(".codex"));
+        let home = platform::codex_home()?;
+        platform::ensure_file_auth(&home)?;
         let excluded = Self::read_excluded(&root)?;
         Ok(Self {
             root,
@@ -260,7 +257,7 @@ impl Store {
     fn write(&self, s: &Saved) -> R<()> {
         let path = self.path(&s.id)?;
         if path.exists() {
-            windows::atomic(&path.with_extension("previous"), &read(&path)?)?;
+            platform::atomic(&path.with_extension("previous"), &read(&path)?)?;
         }
         let bytes = Zeroizing::new(serde_json::to_vec(s).map_err(|_| "Αδυναμία αποθήκευσης")?);
         enc(&path, &bytes)
@@ -471,14 +468,14 @@ impl Store {
             identity(&serde_json::to_vec(&saved.auth).map_err(|_| "Μη έγκυρο προφίλ")?)?.key();
         let path = self.root.join(format!("refresh-{}", uuid::Uuid::new_v4()));
         fs::create_dir(&path).map_err(|_| "Αδυναμία δημιουργίας χώρου ανανέωσης")?;
-        windows::secure_dir(&path)?;
+        platform::secure_dir(&path)?;
         let auth_path = path.join("auth.json");
         let raw = Zeroizing::new(
             serde_json::to_vec(&saved.auth).map_err(|_| "Μη έγκυρα διαπιστευτήρια")?,
         );
-        windows::atomic(&auth_path, &raw)?;
+        platform::atomic(&auth_path, &raw)?;
         let result = (|| -> R<()> {
-            let mut child = Command::new(find_cli()?)
+            let mut child = platform::command(platform::find_cli()?)
                 .args(["-c", "cli_auth_credentials_store=\"file\"", "app-server"])
                 .env("CODEX_HOME", &path)
                 .env_remove("OPENAI_API_KEY")
@@ -486,7 +483,6 @@ impl Store {
                 .stdin(Stdio::piped())
                 .stdout(Stdio::piped())
                 .stderr(Stdio::null())
-                .creation_flags(0x08000000)
                 .spawn()
                 .map_err(|_| "Δεν ξεκίνησε ο μηχανισμός ανανέωσης Codex")?;
             let mut input = child.stdin.take().ok_or("Αδυναμία επικοινωνίας")?;
@@ -548,7 +544,7 @@ impl Store {
             if let Ok(live) = self.live() {
                 let current: Value = serde_json::from_slice(&live).unwrap_or(Value::Null);
                 if current == saved.auth {
-                    windows::atomic(&self.home.join("auth.json"), &updated)?;
+                    platform::atomic(&self.home.join("auth.json"), &updated)?;
                 } else if identity(&live).is_ok_and(|i| i.key() == expected) {
                     self.sync()?;
                     return Ok(());
@@ -581,11 +577,11 @@ impl Store {
         } else {
             None
         };
-        let cli = find_cli()?;
+        let cli = platform::find_cli()?;
         let path = self.root.join(format!("login-{}", uuid::Uuid::new_v4()));
         fs::create_dir(&path).map_err(|_| "Αδυναμία δημιουργίας χώρου login")?;
-        windows::secure_dir(&path)?;
-        let child = Command::new(cli)
+        platform::secure_dir(&path)?;
+        let child = platform::command(cli)
             .args(["login", "-c", "cli_auth_credentials_store=\"file\""])
             .env("CODEX_HOME", &path)
             .env_remove("OPENAI_API_KEY")
@@ -593,7 +589,6 @@ impl Store {
             .stdin(Stdio::null())
             .stdout(Stdio::null())
             .stderr(Stdio::null())
-            .creation_flags(0x08000000)
             .spawn()
             .map_err(|_| "Δεν ξεκίνησε το επίσημο login Codex")?;
         self.login = Some(Login {
@@ -649,6 +644,7 @@ impl Store {
         Ok("Το login ακυρώθηκε.".into())
     }
     pub fn switch(&mut self, id: &str) -> R<String> {
+        platform::ensure_file_auth(&self.home)?;
         if self.login.is_some() {
             return Err("Ολοκλήρωσε ή ακύρωσε πρώτα το login".into());
         }
@@ -670,8 +666,8 @@ impl Store {
         let bytes =
             Zeroizing::new(serde_json::to_vec(&target.auth).map_err(|_| "Μη έγκυρο προφίλ")?);
         let wanted = identity(&bytes)?;
-        if let Err(e) = windows::stop() {
-            let _ = windows::launch();
+        if let Err(e) = platform::stop() {
+            let _ = platform::launch();
             return Err(e);
         }
         // Re-read after shutdown so the latest refresh is preserved.
@@ -680,34 +676,34 @@ impl Store {
                 // Refuse to replace an unreadable/unsupported original rather than
                 // treating a read error as an absent login during rollback.
                 if identity(&bytes).is_err() {
-                    let _ = windows::launch();
+                    let _ = platform::launch();
                     return Err("Το τρέχον login δεν αναγνωρίζεται. Δεν αντικαταστάθηκε.".into());
                 }
                 Some(Zeroizing::new(bytes))
             }
             Err(e) if e.kind() == std::io::ErrorKind::NotFound => None,
             Err(_) => {
-                let _ = windows::launch();
+                let _ = platform::launch();
                 return Err("Δεν διαβάστηκε η προηγούμενη σύνδεση. Η εναλλαγή ακυρώθηκε.".into());
             }
         };
         if let Err(e) = self.sync() {
-            let _ = windows::launch();
+            let _ = platform::launch();
             return Err(e);
         }
         let journal = json!({"previous":previous.as_ref().map(|p|STANDARD.encode(p.as_slice())),"target":wanted.key(),"at":now()});
         let j = Zeroizing::new(serde_json::to_vec(&journal).map_err(|_| "Αδυναμία backup")?);
         if let Err(e) = enc(&self.root.join("transaction.dpapi"), &j) {
-            let _ = windows::launch();
+            let _ = platform::launch();
             return Err(e);
         }
         let outcome: R<()> = (|| {
-            windows::atomic(&self.home.join("auth.json"), &bytes)?;
+            platform::atomic(&self.home.join("auth.json"), &bytes)?;
             let actual = identity(&self.live()?)?;
             if actual.key() != wanted.key() {
                 return Err("Η ταυτότητα του εγκατεστημένου login δεν συμφωνεί".into());
             }
-            windows::launch()?;
+            platform::launch()?;
             std::thread::sleep(std::time::Duration::from_secs(2));
             if identity(&self.live()?)?.key() != wanted.key() {
                 return Err("Το Codex άλλαξε τα διαπιστευτήρια μετά την εκκίνηση".into());
@@ -727,7 +723,7 @@ impl Store {
             ));
         }
         // Retain the encrypted transaction as the last rollback point.
-        windows::atomic(
+        platform::atomic(
             &self.root.join("last-switch.dpapi"),
             &read(&self.root.join("transaction.dpapi"))?,
         )?;
@@ -736,6 +732,7 @@ impl Store {
         Ok(format!("Η σύνδεση άλλαξε σε {}.", wanted.email))
     }
     pub fn recover(&mut self) -> R<String> {
+        platform::ensure_file_auth(&self.home)?;
         let p = self.root.join("transaction.dpapi");
         let j: Value =
             serde_json::from_slice(&dec(&p)?).map_err(|_| "Κατεστραμμένο αρχείο ανάκτησης")?;
@@ -746,14 +743,14 @@ impl Store {
         } else {
             None
         };
-        windows::stop()?;
+        platform::stop()?;
         if let Some(bytes) = prev {
-            windows::atomic(&self.home.join("auth.json"), &bytes)?;
+            platform::atomic(&self.home.join("auth.json"), &bytes)?;
         } else if self.home.join("auth.json").exists() {
             fs::remove_file(self.home.join("auth.json"))
                 .map_err(|_| "Αδυναμία επαναφοράς απουσίας login")?;
         }
-        windows::launch()?;
+        platform::launch()?;
         fs::remove_file(p).map_err(|_| "Η επαναφορά έγινε, αλλά το journal δεν διαγράφηκε")?;
         Ok("Αποκαταστάθηκε η προηγούμενη σύνδεση και άνοιξε το Codex.".into())
     }
@@ -821,21 +818,6 @@ impl CheckJob {
         Ok(h)
     }
 }
-fn find_cli() -> R<PathBuf> {
-    let root =
-        PathBuf::from(std::env::var("LOCALAPPDATA").unwrap_or_default()).join("OpenAI/Codex/bin");
-    let mut paths: Vec<PathBuf> = fs::read_dir(root)
-        .into_iter()
-        .flatten()
-        .filter_map(|e| e.ok())
-        .map(|e| e.path().join("codex.exe"))
-        .filter(|p| p.is_file())
-        .collect();
-    paths.sort_by_key(|p| fs::metadata(p).and_then(|m| m.modified()).ok());
-    paths
-        .pop()
-        .ok_or("Δεν βρέθηκε το επίσημο Codex CLI. Άνοιξε πρώτα το εγκατεστημένο Codex.".into())
-}
 impl Drop for Store {
     fn drop(&mut self) {
         let _ = self.cancel_login();
@@ -882,19 +864,19 @@ mod tests {
         assert!(identity(b"no").is_err());
     }
     #[test]
-    fn dpapi_round_trip_and_wrong_entropy() {
-        let e = windows::protect(b"secret", ENTROPY, false).unwrap();
+    fn vault_round_trip_and_wrong_entropy() {
+        let e = platform::protect(b"secret", ENTROPY, false).unwrap();
         assert_ne!(e, b"secret");
-        assert_eq!(windows::protect(&e, ENTROPY, true).unwrap(), b"secret");
-        assert!(windows::protect(&e, b"wrong", true).is_err());
+        assert_eq!(platform::protect(&e, ENTROPY, true).unwrap(), b"secret");
+        assert!(platform::protect(&e, b"wrong", true).is_err());
     }
     #[test]
     fn atomic_replaces_existing_file() {
         let d = std::env::temp_dir().join(uuid::Uuid::new_v4().to_string());
         fs::create_dir(&d).unwrap();
         let p = d.join("auth.json");
-        windows::atomic(&p, b"one").unwrap();
-        windows::atomic(&p, b"two").unwrap();
+        platform::atomic(&p, b"one").unwrap();
+        platform::atomic(&p, b"two").unwrap();
         assert_eq!(fs::read(&p).unwrap(), b"two");
         fs::remove_file(p).unwrap();
         fs::remove_dir(d).unwrap();
@@ -990,7 +972,7 @@ mod tests {
             .s()
             .save("Wrong label", &fixture("b", "u", false), None)
             .unwrap();
-        windows::atomic(&t.s().home.join("auth.json"), &fixture("b", "u", false)).unwrap();
+        platform::atomic(&t.s().home.join("auth.json"), &fixture("b", "u", false)).unwrap();
         let snap = t.s().snapshot().unwrap();
         assert!(!snap.profiles.iter().find(|p| p.id == a).unwrap().active);
         assert!(snap.profiles.iter().find(|p| p.id == b).unwrap().active);
@@ -1002,7 +984,7 @@ mod tests {
         let b = t.s().save("B", &fixture("b", "u", false), None).unwrap();
         let mut raw: Value = serde_json::from_slice(&fixture("a", "u", false)).unwrap();
         raw["last_refresh"] = json!("new");
-        windows::atomic(
+        platform::atomic(
             &t.s().home.join("auth.json"),
             &serde_json::to_vec(&raw).unwrap(),
         )
@@ -1034,7 +1016,7 @@ mod tests {
     #[test]
     fn unknown_live_account_is_saved_once_and_marked_current() {
         let mut t = Sandbox::new();
-        windows::atomic(
+        platform::atomic(
             &t.s().home.join("auth.json"),
             &fixture("new", "user", false),
         )
@@ -1055,7 +1037,7 @@ mod tests {
     fn malformed_or_api_key_live_file_is_not_auto_added() {
         let mut t = Sandbox::new();
         for raw in [b"{partial".as_slice(), br#"{"OPENAI_API_KEY":"test"}"#] {
-            windows::atomic(&t.s().home.join("auth.json"), raw).unwrap();
+            platform::atomic(&t.s().home.join("auth.json"), raw).unwrap();
             let snapshot = t.s().snapshot().unwrap();
             assert!(snapshot.profiles.is_empty());
             assert!(snapshot.current.is_none());
@@ -1065,7 +1047,7 @@ mod tests {
     fn removed_live_account_stays_removed_across_reloads() {
         let mut t = Sandbox::new();
         let raw = fixture("a", "u", false);
-        windows::atomic(&t.s().home.join("auth.json"), &raw).unwrap();
+        platform::atomic(&t.s().home.join("auth.json"), &raw).unwrap();
         let id = t.s().snapshot().unwrap().profiles[0].id.clone();
         t.s().save("A", &raw, None).unwrap();
         let path = t.s().path(&id).unwrap();
@@ -1091,7 +1073,7 @@ mod tests {
             .save("A", &fixture("shared", "one", false), None)
             .unwrap();
         t.s().remove(&id).unwrap();
-        windows::atomic(
+        platform::atomic(
             &t.s().home.join("auth.json"),
             &fixture("shared", "two", false),
         )

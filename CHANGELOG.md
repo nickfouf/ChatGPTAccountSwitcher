@@ -4,6 +4,14 @@ All notable changes are documented here. Versions follow Semantic Versioning.
 Release dates use YYYY-MM-DD. Keep newest releases first; the app uses these
 sections to show every change since the installed version.
 
+## [0.2.0] - 2026-11-06
+
+### Added
+- Experimental macOS Apple Silicon and Linux x64/ARM64 desktop backends with OS-protected vault encryption keys.
+- Platform installers, signed updater packages, combined release manifests, and native CI jobs.
+- Credential-storage checks that refuse unsupported Codex storage before switching.
+- Linux package update guidance and app restarts after macOS/AppImage updates.
+
 ## [0.1.2] - 2026-11-06
 
 ### Changed

@@ -52,13 +52,21 @@ try {
     $release = $releaseJson | ConvertFrom-Json
     $package = Get-Content -LiteralPath 'package.json' -Raw | ConvertFrom-Json
     $expectedInstaller = "$($package.name)_$($config.version)_x64-setup.exe"
+    $desktopPackages = @(
+        "$($package.name)_$($config.version)_macos-arm64.app.tar.gz",
+        "$($package.name)_$($config.version)_linux-x64.AppImage",
+        "$($package.name)_$($config.version)_linux-arm64.AppImage"
+    )
+    foreach ($name in $desktopPackages) {
+        if ($name -notin $release.assets.name -or "$name.sig" -notin $release.assets.name) { throw "Release asset is missing: $name or its signature" }
+    }
     foreach ($name in @($expectedInstaller, "$expectedInstaller.sig", 'latest.json', 'SHA256SUMS.txt', 'LICENSE.txt', 'FONT-LICENSES.txt', 'THIRD-PARTY-LICENSES.txt')) {
         if ($name -notin $release.assets.name) { throw "Release asset is missing: $name" }
     }
     if ($release.isDraft) {
         & $ghExe release download $Tag --repo $repository --dir release --clobber
         if ($LASTEXITCODE -ne 0) { throw 'Could not download the uploaded release for verification.' }
-        & node scripts/release.mjs verify
+        & node scripts/release.mjs verify --all
         if ($LASTEXITCODE -ne 0) { throw 'The downloaded manifest or checksums failed verification.' }
         & cargo run --locked --manifest-path src-tauri/Cargo.toml --example verify_release --release --target x86_64-pc-windows-msvc -- src-tauri/tauri.conf.json release/latest.json
         if ($LASTEXITCODE -ne 0) { throw 'The downloaded installer signature failed verification.' }

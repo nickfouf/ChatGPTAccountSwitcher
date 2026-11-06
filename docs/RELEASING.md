@@ -2,7 +2,7 @@
 
 The configured repository is `nickfouf/ChatGPTAccountSwitcher`. The stable update endpoint is `https://github.com/nickfouf/ChatGPTAccountSwitcher/releases/latest/download/latest.json`.
 
-The supported target is Windows 10/11 x64 with a per-user NSIS installer. Keep `local.codexharbor.desktop`, the vault location, and its DPAPI entropy stable: existing installations rely on those identities to upgrade and read saved accounts.
+Release targets are Windows x64 (NSIS), macOS Apple Silicon (DMG and signed app archive), and Linux x64/ARM64 (AppImage, DEB, and RPM). The new macOS/Linux targets require native installation and switching validation before their first publication. Keep `local.codexharbor.desktop`, the Windows vault location, and its DPAPI entropy stable: existing installations rely on those identities to upgrade and read saved accounts.
 
 ## First GitHub publication
 
@@ -89,7 +89,7 @@ git tag -a v0.2.0 -m "Release v0.2.0"
 git push origin v0.2.0
 ```
 
-The Release workflow checks the tagged source, rejects mismatched versions, builds and signs the installer, generates the updater manifest and checksums, and uploads assets to a **draft GitHub release**. Only the upload job receives write permissions and the signing secret. Pull-request jobs cannot access it. Workflow actions are pinned to commit hashes.
+The Release workflow checks the tagged source, rejects mismatched versions, builds and signs all four platform updater packages, merges their manifests and license notices, and uploads assets to a **draft GitHub release**. Only the final upload job receives repository write permission. Platform build jobs receive the updater signing secret; macOS can also receive Apple signing/notarization secrets. Pull-request jobs cannot access these secrets. Workflow actions are pinned to commit hashes.
 
 Open the draft, review its notes and installer, and select **Publish release**. Only published stable releases are delivered through `/releases/latest/`. Drafts and prereleases do not interrupt users. Keep older releases available for history and manual downloads.
 
@@ -120,7 +120,7 @@ Release asset names use the stable ASCII package name (for example, `chatgpt-acc
 
 ## Interactive release verification
 
-Use a disposable Windows user or VM:
+Use a disposable user or VM on each target OS:
 
 1. Install the previous build and launch it with test accounts.
 2. Publish the next stable release; confirm update discovery and every intermediate changelog section.
@@ -130,3 +130,13 @@ Use a disposable Windows user or VM:
 6. Test unavailable networking and an invalid signature in an isolated test repository. Never alter a production release for testing.
 
 Automated tests exercise the interface and native operation gating. They do not install updates or change real Codex credentials. A full online update test requires two published versions and interactive installation; a successful local build alone does not establish that result.
+
+## macOS and Linux release builds
+
+`npm run release:build` selects the current host OS and architecture. `RELEASE_TARGET` selects one of the four supported Rust triples in `scripts/release-targets.mjs`. macOS and Linux builds apply their Tauri configuration overlays automatically. `BUNDLE_DIR` is intended for manifest fixtures; normal builds include DMG or DEB/RPM downloads as well as updater archives. Windows asset names and the existing updater signing identity remain stable.
+
+GitHub Actions builds all targets on native runners. Each job uploads its partial manifest under its updater platform ID. The final job runs `node scripts/release.mjs merge`, refuses missing platforms or corrupted assets, and verifies every update against the embedded public key and signed version. `node scripts/release.mjs verify --all` requires the complete desktop release; the publication helper uses it before publishing. Partial manifests are only for local builds and are never uploaded as the stable combined manifest.
+
+For public macOS distribution, configure repository secrets `APPLE_CERTIFICATE` (base64 Developer ID certificate), `APPLE_CERTIFICATE_PASSWORD`, `APPLE_SIGNING_IDENTITY`, `APPLE_ID`, `APPLE_PASSWORD` (app-specific), and `APPLE_TEAM_ID`. Without Apple signing configuration, macOS output is a development build and may be blocked by Gatekeeper. Updater signatures are separate from Apple signing/notarization. Never claim a development build is notarized.
+
+Linux AppImages support the signed in-app updater. DEB/RPM installations use the system package manager to install a newly downloaded package; the interface explains this and opens GitHub Releases. The Linux desktop requires an unlocked Secret Service provider. Validate first login, removal, switching, rollback, system language, installation, upgrade, and uninstall on macOS and both Linux architectures before publishing support claims. Automated tests use synthetic vault data and never operate real Codex sessions.

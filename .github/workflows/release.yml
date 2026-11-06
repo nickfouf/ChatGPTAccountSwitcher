@@ -22,10 +22,75 @@ jobs:
     uses: ./.github/workflows/checks.yml
     with:
       ref: ${{ inputs.tag || github.ref_name }}
-  release:
+  build:
     needs: checks
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-2022
+            target: x86_64-pc-windows-msvc
+            platform: windows-x86_64
+          - os: macos-15
+            target: aarch64-apple-darwin
+            platform: darwin-aarch64
+          - os: ubuntu-24.04
+            target: x86_64-unknown-linux-gnu
+            platform: linux-x86_64
+          - os: ubuntu-24.04-arm
+            target: aarch64-unknown-linux-gnu
+            platform: linux-aarch64
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    env:
+      RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
+      RELEASE_TARGET: ${{ matrix.target }}
+      APPIMAGE_EXTRACT_AND_RUN: '1'
+      NO_STRIP: '1'
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ inputs.tag || github.ref_name }}
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24'
+          cache: npm
+      - name: Set up Rust
+        run: rustup toolchain install 1.96.0 --profile minimal --target ${{ matrix.target }}
+      - uses: Swatinem/rust-cache@e9d7b9f1e587218970671bac74e5511ed9506e6a # v2
+        with:
+          workspaces: src-tauri -> target
+      - name: Install Linux build dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential libssl-dev librsvg2-dev libayatana-appindicator3-dev libdbus-1-dev patchelf
+      - run: npm ci
+      - run: npm run release:validate
+      - name: Build signed platform packages
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: npm run release:build
+      - name: Keep platform artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: ${{ matrix.platform }}
+          path: release/
+          if-no-files-found: error
+          retention-days: 30
+
+  release:
+    needs: build
     runs-on: windows-2022
-    timeout-minutes: 45
+    timeout-minutes: 15
     permissions:
       contents: write
     env:
@@ -38,34 +103,20 @@ jobs:
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: '24'
-          cache: npm
       - name: Set up Rust
         run: rustup toolchain install 1.96.0 --profile minimal
       - uses: Swatinem/rust-cache@e9d7b9f1e587218970671bac74e5511ed9506e6a # v2
         with:
           workspaces: src-tauri -> target
-      - run: npm ci
-      - name: Validate version and signing setup
-        env:
-          SIGNING_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-        shell: pwsh
-        run: |
-          if ($env:RELEASE_TAG -notmatch '^v\d+\.\d+\.\d+$') { throw 'A stable version tag is required.' }
-          if (!$env:SIGNING_KEY) { throw 'Run scripts/setup-github.ps1 to configure the signing secret.' }
-          npm run release:validate
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-      - name: Build signed installer and update manifest
-        env:
-          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
-        run: npm run release:build
-      - name: Keep downloadable build artifacts
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
-          name: windows-x64-${{ env.RELEASE_TAG }}
-          path: release/
-          if-no-files-found: error
-          retention-days: 30
+          path: release-parts
+      - name: Merge platform manifests and verify every signed update
+        run: |
+          node scripts/release.mjs merge
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          cargo run --locked --manifest-path src-tauri/Cargo.toml --example verify_release --release -- src-tauri/tauri.conf.json release/latest.json
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Create or refresh draft release
         env:
           GH_TOKEN: ${{ github.token }}

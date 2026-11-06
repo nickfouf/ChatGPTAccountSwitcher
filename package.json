@@ -1,6 +1,6 @@
 {
   "name": "chatgpt-account-switcher",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -34,7 +34,7 @@
     "dompurify": "^3.4.17",
     "marked": "^18.1.3"
   },
-  "description": "An independent Windows companion for saving and switching Codex accounts",
+  "description": "An independent desktop companion for saving and switching Codex accounts",
   "license": "MIT",
   "author": "nickfouf",
   "repository": {

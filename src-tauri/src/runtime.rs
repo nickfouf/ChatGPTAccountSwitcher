@@ -37,7 +37,7 @@ pub fn start(app: tauri::AppHandle) {
         }
         let mut last = String::new();
         loop {
-            // Native Windows file events handle auth replacement/rotation immediately.
+            // Native file events handle auth replacement/rotation immediately.
             // A 1-second fallback also detects completed browser login and missed events.
             match rx.recv_timeout(Duration::from_secs(1)) {
                 Ok(()) => {
@@ -136,7 +136,7 @@ mod tests {
         let mut watcher = notify::recommended_watcher(tx).unwrap();
         watcher.watch(&root, RecursiveMode::NonRecursive).unwrap();
         let auth = root.join("auth.json");
-        crate::windows::atomic(&auth, b"synthetic").unwrap();
+        crate::platform::atomic(&auth, b"synthetic").unwrap();
         let deadline = Instant::now() + Duration::from_secs(5);
         let mut found = false;
         while Instant::now() < deadline {

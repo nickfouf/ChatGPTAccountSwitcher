@@ -1,9 +1,9 @@
 [package]
 name = "chatgpt-account-switcher"
-version = "0.1.2"
+version = "0.2.0"
 edition = "2021"
 rust-version = "1.96"
-description = "An independent Windows companion for saving and switching Codex accounts"
+description = "An independent desktop companion for saving and switching Codex accounts"
 license = "MIT"
 repository = "https://github.com/nickfouf/ChatGPTAccountSwitcher"
 publish = false
@@ -20,6 +20,20 @@ fs2 = "0.4"
 reqwest = { version = "0.12", default-features = false, features = ["blocking", "json", "rustls-tls"] }
 notify = "8"
 tauri-plugin-updater = "2"
+toml = "0.9"
+
+[target.'cfg(any(target_os = "macos", target_os = "linux"))'.dependencies]
+aes-gcm = { version = "0.10", features = ["zeroize"] }
+sysinfo = { version = "0.37", default-features = false, features = ["system"] }
+libc = "0.2"
+sys-locale = "0.3"
+
+[target.'cfg(target_os = "macos")'.dependencies]
+keyring = { version = "3.6", features = ["apple-native"] }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+keyring = { version = "3.6", features = ["sync-secret-service", "crypto-rust"] }
+
 [profile.release]
 strip = true
 

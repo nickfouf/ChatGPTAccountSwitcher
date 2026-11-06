@@ -1,13 +1,13 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 mod core;
+mod platform;
 mod runtime;
 mod updates;
-mod windows;
 use serde_json::{json, Value};
 use std::sync::{Arc, Mutex};
 #[tauri::command]
 fn system_languages() -> Vec<String> {
-    windows::preferred_languages()
+    platform::preferred_languages()
 }
 #[tauri::command]
 async fn action(
@@ -37,7 +37,7 @@ async fn action(
             "recover" => s.recover()?,
             "remove" => s.remove(id.as_deref().ok_or("Λείπει προφίλ")?)?,
             "open" => {
-                windows::launch()?;
+                platform::launch()?;
                 "Το Codex άνοιξε.".into()
             }
             _ => return Err("Άγνωστη ενέργεια".into()),
@@ -58,8 +58,7 @@ fn main() {
                 }
                 return;
             }
-            let msg = e.replace('\'', "''");
-            let _=windows::ps(&format!("Add-Type -AssemblyName PresentationFramework;[System.Windows.MessageBox]::Show('{}','ChatGPT Account Switcher')",msg));
+            platform::show_error(&e);
             return;
         }
     };
@@ -111,6 +110,7 @@ fn main() {
             action,
             system_languages,
             updates::app_info,
+            updates::open_release_downloads,
             updates::check_for_updates,
             updates::install_update
         ])
