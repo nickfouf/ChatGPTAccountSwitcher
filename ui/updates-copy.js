@@ -1,8 +1,8 @@
 import {localizedUpdates} from './localized-updates.js';
+import {linuxUpdateCopy} from './linux-updates-copy.js';
 export const updateCopy = {
   ...localizedUpdates,
   en: {
-    packageTitle:'Update your Linux package', packageBody:'Download the latest DEB or RPM from GitHub Releases and install it with your package manager. Use the AppImage edition for automatic in-app updates.', packageAction:'Open downloads', packageFootnote:'Your locally saved accounts are preserved when you install a newer package.', packageError:'Could not open your browser. Visit github.com/nickfouf/ChatGPTAccountSwitcher/releases/latest to download a package.',
     checkUpdates:'Check for updates', automatic:'Check for app updates automatically', version:'Version',
     checking:'Checking for updates…', checkingBody:'Looking for the latest release.',
     currentTitle:'You’re up to date', currentBody:'You have the latest available version.',
@@ -35,3 +35,4 @@ export const updateCopy = {
     downloading:'λήφθηκε', available:'Διαθέσιμη ενημέρωση',
   },
 };
+for (const [locale,copy] of Object.entries(linuxUpdateCopy)) Object.assign(updateCopy[locale],copy);

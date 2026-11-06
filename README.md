@@ -1,6 +1,14 @@
-# ChatGPT Account Switcher
+# ChatGPT Account Switcher for Codex
 
-A desktop companion for saving and switching Codex accounts, with encrypted local storage, usage summaries, a guided tour, and signed app updates.
+**Switch Codex accounts. Keep your flow.**
+
+Save your accounts, see remaining usage at a glance, and switch with a confirmed Codex restart. Credentials stay encrypted on your computer. Free, open source, and available in 32 languages.
+
+[**Download the latest release**](https://github.com/nickfouf/ChatGPTAccountSwitcher/releases/latest) · [Platform setup](docs/PLATFORMS.md) · [Report a bug](https://github.com/nickfouf/ChatGPTAccountSwitcher/issues)
+
+![Account overview, switch confirmation, selected account, and language settings](docs/assets/walkthrough.gif)
+
+*Actual interface with sample accounts. Native sign-in and Codex restarts are simulated in this UI walkthrough. Windows x64; experimental macOS Apple Silicon and Linux x64/ARM64 support.*
 
 **Independent community project. Not affiliated with, endorsed by, or supported by OpenAI.** ChatGPT, Codex, and OpenAI are trademarks of their respective owners.
 
@@ -90,6 +98,8 @@ After committing a new version on `main`, publish it using your GitHub sign-in w
 ## Contribute
 
 Read [CONTRIBUTING.md](CONTRIBUTING.md). Use [GitHub Issues](https://github.com/nickfouf/ChatGPTAccountSwitcher/issues) for reproducible bugs and [SECURITY.md](SECURITY.md) for vulnerabilities. Never share credentials, vault files, or private keys publicly.
+
+If this saves you time, star the repository or share the [demo and launch materials](docs/LAUNCH.md). macOS/Linux installation and switching reports are especially useful while those targets are experimental.
 
 ## License
 
