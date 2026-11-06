@@ -48,8 +48,15 @@ try {
   const capture=async(name,delay=1000)=>{await page.waitForTimeout(delay);await page.screenshot({path:path.join(frames,`${name}.png`)});};
   await capture('01-accounts',1500);
   await page.screenshot({path:path.join(assets,'accounts.png')});
-  await page.setViewportSize({width:1280,height:640});
-  await page.screenshot({path:path.join(assets,'social-preview.png')});
+  await page.setViewportSize({width:1280,height:680});
+  const socialImage = await page.screenshot({fullPage:true});
+  const preview=await browser.newPage({viewport:{width:1280,height:640},deviceScaleFactor:1});
+  await preview.setContent(`<!doctype html><style>*{box-sizing:border-box}html,body{margin:0;width:1280px;height:640px;background:#fff}body{display:flex;align-items:center;justify-content:center}img{display:block;max-width:1216px;max-height:584px;width:auto;height:auto;border:2px solid #e7e8ec;border-radius:18px}</style><img alt="Actual app interface with sample accounts" src="data:image/png;base64,${socialImage.toString('base64')}">`);
+  await preview.locator('img').evaluate(image=>image.decode());
+  const imageBounds=await preview.locator('img').boundingBox();
+  if(!imageBounds || imageBounds.x<24 || imageBounds.y<24 || imageBounds.x+imageBounds.width>1256 || imageBounds.y+imageBounds.height>616) throw Error('Social preview does not leave safe margins.');
+  await preview.screenshot({path:path.join(assets,'social-preview.png')});
+  await preview.close();
   await page.setViewportSize({width:1100,height:760});
   await page.getByRole('button',{name:'Switch account',exact:true}).click();
   await capture('02-confirm',1500);
