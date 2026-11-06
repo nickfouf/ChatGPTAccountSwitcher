@@ -50,11 +50,18 @@ try {
     $releaseJson = & $ghExe release view $Tag --repo $repository --json isDraft,tagName,assets,url
     if ($LASTEXITCODE -ne 0) { throw 'The workflow did not produce a release.' }
     $release = $releaseJson | ConvertFrom-Json
-    $expectedInstaller = "$($config.productName)_$($config.version)_x64-setup.exe"
+    $package = Get-Content -LiteralPath 'package.json' -Raw | ConvertFrom-Json
+    $expectedInstaller = "$($package.name)_$($config.version)_x64-setup.exe"
     foreach ($name in @($expectedInstaller, "$expectedInstaller.sig", 'latest.json', 'SHA256SUMS.txt', 'LICENSE.txt', 'FONT-LICENSES.txt', 'THIRD-PARTY-LICENSES.txt')) {
         if ($name -notin $release.assets.name) { throw "Release asset is missing: $name" }
     }
     if ($release.isDraft) {
+        & $ghExe release download $Tag --repo $repository --dir release --clobber
+        if ($LASTEXITCODE -ne 0) { throw 'Could not download the uploaded release for verification.' }
+        & node scripts/release.mjs verify
+        if ($LASTEXITCODE -ne 0) { throw 'The downloaded manifest or checksums failed verification.' }
+        & cargo run --locked --manifest-path src-tauri/Cargo.toml --example verify_release --release --target x86_64-pc-windows-msvc -- src-tauri/tauri.conf.json release/latest.json
+        if ($LASTEXITCODE -ne 0) { throw 'The downloaded installer signature failed verification.' }
         & $ghExe release edit $Tag --repo $repository --draft=false --latest
         if ($LASTEXITCODE -ne 0) { throw 'Could not publish the verified draft release.' }
     }

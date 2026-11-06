@@ -58,18 +58,23 @@ test('local environment is loaded without overriding authenticated CI configurat
 test('release manifest preserves signatures, cumulative notes, encoded URLs, and accurate checksums',t=>{
   const {root,run}=fixture(t);
   const bundle=path.join(root,'bundle');fs.mkdirSync(bundle);
-  const installer='ChatGPT Account Switcher_0.1.0_x64-setup.exe';
-  fs.writeFileSync(path.join(bundle,installer),'synthetic installer fixture');
+  const version=JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8')).version;
+  const sourceInstaller=`ChatGPT Account Switcher_${version}_x64-setup.exe`;
+  const installer=`chatgpt-account-switcher_${version}_x64-setup.exe`;
+  fs.writeFileSync(path.join(bundle,sourceInstaller),'synthetic installer fixture');
   fs.writeFileSync(path.join(bundle,'ChatGPT Account Switcher_0.0.1_x64-setup.exe'),'stale previous release');
-  fs.writeFileSync(path.join(bundle,`${installer}.sig`),'synthetic-signature\n');
+  fs.writeFileSync(path.join(bundle,`${sourceInstaller}.sig`),'synthetic-signature\n');
   assert.equal(run('manifest',[],{BUNDLE_DIR:bundle}).status,0);
   const release=path.join(root,'release'),manifest=JSON.parse(fs.readFileSync(path.join(release,'latest.json'),'utf8'));
   assert.equal(manifest.platforms['windows-x86_64'].signature,'synthetic-signature');
-  assert.equal(manifest.platforms['windows-x86_64'].url,`https://github.com/nickfouf/ChatGPTAccountSwitcher/releases/download/v0.1.0/${encodeURIComponent(installer)}`);
-  assert.match(manifest.notes,/## \[0\.1\.0\]/);
+  assert.equal(manifest.platforms['windows-x86_64'].url,`https://github.com/nickfouf/ChatGPTAccountSwitcher/releases/download/v${version}/${installer}`);
+  assert.ok(manifest.notes.includes(`## [${version}]`));
+  assert.equal(run('verify').status,0);
   for(const line of fs.readFileSync(path.join(release,'SHA256SUMS.txt'),'utf8').trim().split('\n')){
     const [sum,file]=line.split('  ');assert.equal(crypto.createHash('sha256').update(fs.readFileSync(path.join(release,file))).digest('hex'),sum);
   }
-  fs.writeFileSync(path.join(bundle,`${installer}.sig`),'');
+  fs.appendFileSync(path.join(release,installer),'tamper');
+  assert.notEqual(run('verify').status,0);
+  fs.writeFileSync(path.join(bundle,`${sourceInstaller}.sig`),'');
   assert.notEqual(run('manifest',[],{BUNDLE_DIR:bundle}).status,0);
 });

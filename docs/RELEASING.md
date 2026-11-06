@@ -66,7 +66,7 @@ npm run release:publish
 
 This validates versions and a clean working tree, creates the matching tag, pushes source and tag, waits for the Release workflow, checks the expected release assets, and publishes its completed draft. A failed check or build stops publication. It does not commit changes for you or overwrite an existing version tag pointing at different source.
 
-For the first release, retain `0.1.0`. For later releases:
+To prepare a new release:
 
 ```powershell
 npm run version:prepare -- 0.2.0
@@ -89,7 +89,7 @@ git tag -a v0.2.0 -m "Release v0.2.0"
 git push origin v0.2.0
 ```
 
-Use `v0.1.0` for the initial release. The Release workflow checks the tagged source, rejects mismatched versions, builds and signs the installer, generates the updater manifest and checksums, and uploads assets to a **draft GitHub release**. Only the upload job receives write permissions and the signing secret. Pull-request jobs cannot access it. Workflow actions are pinned to commit hashes.
+The Release workflow checks the tagged source, rejects mismatched versions, builds and signs the installer, generates the updater manifest and checksums, and uploads assets to a **draft GitHub release**. Only the upload job receives write permissions and the signing secret. Pull-request jobs cannot access it. Workflow actions are pinned to commit hashes.
 
 Open the draft, review its notes and installer, and select **Publish release**. Only published stable releases are delivered through `/releases/latest/`. Drafts and prereleases do not interrupt users. Keep older releases available for history and manual downloads.
 
@@ -116,7 +116,7 @@ Output in ignored `release/`:
 
 The local manifest points to the matching repository tag. It only becomes usable after those exact assets are published there. Local builds never publish automatically.
 
-The build also verifies the actual installer against the embedded public key and its signed version, and confirms that a modified installer is rejected. Existing installations require the signed version field, protecting against a manifest announcing a new version while serving an old signed installer.
+Release asset names use the stable ASCII package name (for example, `chatgpt-account-switcher_0.1.1_x64-setup.exe`) so GitHub does not normalize them into different download URLs. The build verifies the actual installer against the embedded public key and its signed version and confirms that a modified installer is rejected. The publishing helper repeats verification on the uploaded assets before publishing, including URL and checksum checks. Existing installations require the signed version field, protecting against a manifest announcing a new version while serving an old signed installer.
 
 ## Interactive release verification
 

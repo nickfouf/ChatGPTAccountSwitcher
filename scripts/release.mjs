@@ -57,11 +57,14 @@ function manifest() {
   const bundle = process.env.BUNDLE_DIR || 'src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis';
   const files = fs.readdirSync(bundle).filter(file => file.endsWith(`_${version}_x64-setup.exe`));
   if (files.length !== 1) fail(`Expected exactly one Windows x64 NSIS installer for ${version}.`);
-  const installer = files[0];
-  const signature = fs.readFileSync(path.join(bundle, `${installer}.sig`), 'utf8').trim();
+  const sourceInstaller = files[0];
+  // GitHub normalizes spaces in uploaded names. Publish an explicit ASCII name everywhere.
+  const installer = `${pkg.name}_${version}_x64-setup.exe`;
+  const signature = fs.readFileSync(path.join(bundle, `${sourceInstaller}.sig`), 'utf8').trim();
   if (!signature) fail('Installer signature is empty.');
   const out = 'release'; fs.mkdirSync(out, {recursive:true});
-  for (const file of [installer, `${installer}.sig`]) fs.copyFileSync(path.join(bundle, file), path.join(out, file));
+  fs.copyFileSync(path.join(bundle, sourceInstaller), path.join(out, installer));
+  fs.copyFileSync(path.join(bundle, `${sourceInstaller}.sig`), path.join(out, `${installer}.sig`));
   const notes = sections.map(section => section[0].trim()).join('\n\n');
   writeJSON(`${out}/latest.json`, {version, notes, pub_date:new Date().toISOString(), platforms:{'windows-x86_64':{signature, url:`https://github.com/${repository}/releases/download/v${version}/${encodeURIComponent(installer)}`}}});
   fs.writeFileSync(`${out}/release-notes.md`, `${sections[0][0].trim()}\n\n### Installation\nDownload **${installer}** for Windows 10/11 (x64). Updates preserve your locally encrypted accounts.\n\nUpdates are cryptographically verified. This community project currently has no Windows Authenticode certificate, so Windows may show an unknown-publisher warning.\n`);
@@ -73,10 +76,28 @@ function manifest() {
   console.log(`Prepared installer, signature, manifest, notes, licenses, and checksums in ${out}/.`);
 }
 
+function verifyRelease() {
+  const version = validate();
+  const installer = `${pkg.name}_${version}_x64-setup.exe`;
+  const manifest = readJSON('release/latest.json');
+  if (manifest.version !== version || manifest.platforms['windows-x86_64'].url !== `https://github.com/${repository}/releases/download/v${version}/${installer}`) fail('Downloaded update manifest does not point to the expected release asset.');
+  if (manifest.platforms['windows-x86_64'].signature !== fs.readFileSync(`release/${installer}.sig`, 'utf8').trim()) fail('Downloaded manifest signature does not match the signature asset.');
+  const expected = new Set([installer, `${installer}.sig`, 'latest.json', 'LICENSE.txt', 'FONT-LICENSES.txt', 'THIRD-PARTY-LICENSES.txt']);
+  const checksums = fs.readFileSync('release/SHA256SUMS.txt', 'utf8').trim().split(/\r?\n/);
+  for (const line of checksums) {
+    const [hash, file] = line.split('  ');
+    if (!expected.delete(file)) fail('Unexpected or repeated checksum filename.');
+    if (crypto.createHash('sha256').update(fs.readFileSync(path.join('release', file))).digest('hex') !== hash) fail(`Downloaded checksum does not match ${file}.`);
+  }
+  if (expected.size) fail('Downloaded checksums omit required assets.');
+  console.log('Downloaded manifest, signature reference, filenames, and all release checksums verified.');
+}
+
 const command = process.argv[2];
 if (command === 'validate') validate(process.env.RELEASE_TAG || process.argv[3]);
 else if (command === 'bump') bump(process.argv[3]);
 else if (command === 'manifest') manifest();
+else if (command === 'verify') verifyRelease();
 else if (command === 'build') {
   validate();
   if (!process.env.TAURI_SIGNING_PRIVATE_KEY) {

@@ -31,13 +31,13 @@ fn main() -> Result<(), Box<dyn Error>> {
         return Err("Signature does not bind the announced release version".into());
     }
     // Derive the standard local asset name from signed build metadata, never from a remote URL.
-    let product = config["productName"]
-        .as_str()
-        .ok_or("Missing product name")?;
     let installer = manifest_path
         .parent()
         .ok_or("Missing manifest directory")?
-        .join(format!("{product}_{version}_x64-setup.exe"));
+        .join(format!(
+            "{}_{version}_x64-setup.exe",
+            env!("CARGO_PKG_NAME")
+        ));
     let mut bytes = fs::read(installer)?;
     key.verify(&bytes, &signature, true)?;
     if bytes.is_empty() {

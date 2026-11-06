@@ -4,6 +4,12 @@ All notable changes are documented here. Versions follow Semantic Versioning.
 Release dates use YYYY-MM-DD. Keep newest releases first; the app uses these
 sections to show every change since the installed version.
 
+## [0.1.1] - 2026-11-06
+
+### Changed
+- Use stable installer filenames in GitHub Releases so updater download URLs match uploaded assets.
+- Verify downloaded manifest, checksums, and installer signatures before publishing.
+
 ## [0.1.0] - 2026-11-06
 
 ### Added
