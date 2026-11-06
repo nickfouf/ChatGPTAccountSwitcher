@@ -1,0 +1,10 @@
+{
+  "en": "English", "el": "Greek", "de": "German", "es": "Spanish",
+  "fr": "French", "it": "Italian", "pt-BR": "PortugueseBR", "pt-PT": "Portuguese",
+  "nl": "Dutch", "sv": "Swedish", "da": "Danish", "nb": "Norwegian",
+  "fi": "Finnish", "pl": "Polish", "cs": "Czech", "hu": "Hungarian",
+  "ro": "Romanian", "bg": "Bulgarian", "uk": "Ukrainian", "ru": "Russian",
+  "tr": "Turkish", "ar": "Arabic", "he": "Hebrew", "fa": "Farsi",
+  "hi": "Hindi", "zh-CN": "SimpChinese", "zh-TW": "TradChinese", "ja": "Japanese",
+  "ko": "Korean", "id": "Indonesian", "vi": "Vietnamese", "th": "Thai"
+}

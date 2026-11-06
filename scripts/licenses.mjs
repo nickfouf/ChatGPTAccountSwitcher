@@ -31,5 +31,6 @@ for (const [directory, entry] of Object.entries(npmLock.packages).sort()) {
 for (const pkg of metadata.packages.filter(pkg => runtime.has(pkg.id) && pkg.id !== metadata.resolve.root).sort((a,b) => a.name.localeCompare(b.name))) {
   collect(`${pkg.name} ${pkg.version}`,path.dirname(pkg.manifest_path),pkg.license,pkg.repository || `https://crates.io/crates/${pkg.name}/${pkg.version}`,pkg.license_file);
 }
+sections.push('Tauri installer translations (CLI v2.12.4)\nSource: https://github.com/tauri-apps/tauri/tree/tauri-cli-v2.12.4/crates/tauri-bundler/src/bundle/windows/nsis/languages\n\n' + fs.readFileSync('src-tauri/installer/UPSTREAM-LICENSE-MIT.txt','utf8'));
 fs.writeFileSync('ui/public/THIRD-PARTY-LICENSES.txt',sections.join('\n\n')+'\n');
 console.log(`Generated third-party notices for ${sections.length-1} packages.`);

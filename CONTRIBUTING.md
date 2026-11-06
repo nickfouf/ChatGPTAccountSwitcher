@@ -12,6 +12,7 @@ npm run lint:rust
 npm run format:check
 npm run release:validate
 npm run test:release
+npm run test:installer
 ```
 
 Add user-visible changes to `CHANGELOG.md`. Maintainers prepare version bumps; ordinary fixes should not independently change package versions.

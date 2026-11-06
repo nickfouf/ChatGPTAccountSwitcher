@@ -1,6 +1,6 @@
 {
   "name": "chatgpt-account-switcher",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "private": true,
   "type": "module",
   "scripts": {
@@ -18,7 +18,8 @@
     "signing:setup": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/setup-signing.ps1",
     "licenses:generate": "node scripts/licenses.mjs",
     "test:release": "node --test scripts/release.test.mjs",
-    "release:publish": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/publish-release.ps1"
+    "release:publish": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/publish-release.ps1",
+    "test:installer": "node --test scripts/installer.test.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.64.1",

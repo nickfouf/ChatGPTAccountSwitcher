@@ -99,6 +99,7 @@ else if (command === 'bump') bump(process.argv[3]);
 else if (command === 'manifest') manifest();
 else if (command === 'verify') verifyRelease();
 else if (command === 'build') {
+  execFileSync(process.execPath, ['--test', 'scripts/installer.test.mjs'], {stdio:'inherit'});
   validate();
   if (!process.env.TAURI_SIGNING_PRIVATE_KEY) {
     const key = path.join(process.env.USERPROFILE || process.env.HOME || '', '.chatgpt-account-switcher/keys/updater.key');

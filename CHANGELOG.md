@@ -4,6 +4,14 @@ All notable changes are documented here. Versions follow Semantic Versioning.
 Release dates use YYYY-MM-DD. Keep newest releases first; the app uses these
 sections to show every change since the installed version.
 
+## [0.1.2] - 2026-11-06
+
+### Changed
+- Support all 32 app languages in the Windows installer and uninstaller.
+- Default the installer language selector to the Windows language on first use and remember manual choices for maintenance.
+- Translate all installer-specific WebView2, running-app, repair, and uninstall messages.
+- Check installer/app language parity, complete messages, and preserved variables before release builds.
+
 ## [0.1.1] - 2026-11-06
 
 ### Changed

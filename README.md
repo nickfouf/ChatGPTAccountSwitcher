@@ -22,6 +22,8 @@ Install and open the official Windows Codex app at least once. This application 
 
 The interface offers 32 language options. **Use PC language** is the default: it follows Windows display-language preferences, with English as the fallback for unsupported languages. You can select a specific language in Settings or return to the PC setting at any time. Explicit language choices are kept between launches. Dates use the selected locale, and Arabic, Hebrew, and Persian use a right-to-left layout. See [language support](docs/LANGUAGES.md) for the full list and translation guidance.
 
+The installer and uninstaller support the same 32 languages, defaulting to the Windows language on first use. The installer remembers a manual selection for maintenance and uninstall.
+
 Codex behavior and authentication interfaces may change. Browser login and switching a real running Codex session require interactive validation. The current-account marker identifies the live auth-file identity; an already created chat may retain its previous session.
 
 ## App updates
@@ -50,6 +52,7 @@ Verification uses synthetic accounts and temporary test vaults, without signing 
     npm run format:check
     npm run release:validate
     npm run test:release
+    npm run test:installer
 
 The UI tests use Microsoft Edge. Running the real app accesses your local Codex account storage. Compile without packaging with:
 
