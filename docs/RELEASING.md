@@ -6,7 +6,7 @@ The supported target is Windows 10/11 x64 with a per-user NSIS installer. Keep `
 
 ## First GitHub publication
 
-The source is prepared locally; local builds do not publish anything. Install [GitHub CLI](https://cli.github.com/) and authenticate:
+Local builds do not publish anything. Publication uses [GitHub CLI](https://cli.github.com/) and its OS credential store; no personal GitHub token needs to be kept in this project. Install and authenticate on a new development machine:
 
 ```powershell
 winget install --id GitHub.cli --exact
@@ -58,6 +58,14 @@ Update signing is distinct from Authenticode. It authenticates downloaded instal
 
 ## Release a new version
 
+On this machine, the authenticated GitHub CLI is stored under `%LOCALAPPDATA%\ChatGPTAccountSwitcher\Tools`; the setup and publication helpers discover it automatically. Authentication remains in the OS credential store. Once changes are reviewed and committed on `main`, publish the app version with:
+
+```powershell
+npm run release:publish
+```
+
+This validates versions and a clean working tree, creates the matching tag, pushes source and tag, waits for the Release workflow, checks the expected release assets, and publishes its completed draft. A failed check or build stops publication. It does not commit changes for you or overwrite an existing version tag pointing at different source.
+
 For the first release, retain `0.1.0`. For later releases:
 
 ```powershell
@@ -94,7 +102,9 @@ npm ci
 npm run release:build
 ```
 
-The build uses the existing key outside the source directory, or `TAURI_SIGNING_PRIVATE_KEY` if provided. Output in ignored `release/`:
+The ignored local `.env` sets `TAURI_SIGNING_PRIVATE_KEY` to the external key file path. The key itself stays outside the repository; no GitHub token is stored in `.env`. Release scripts load this file automatically. Existing process variables take precedence, so GitHub Actions uses its encrypted secret. On a new machine, copy `.env.example` to `.env` and point it at the restored key, or omit the setting to use the default external key location.
+
+Output in ignored `release/`:
 
 - `*-setup.exe`: Windows x64 per-user installer.
 - `*-setup.exe.sig`: updater signature.

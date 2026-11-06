@@ -4,7 +4,7 @@ All notable changes are documented here. Versions follow Semantic Versioning.
 Release dates use YYYY-MM-DD. Keep newest releases first; the app uses these
 sections to show every change since the installed version.
 
-## [0.1.0] - 2026-11-05
+## [0.1.0] - 2026-11-06
 
 ### Added
 - Save and switch Codex accounts using encrypted storage for the current Windows user.

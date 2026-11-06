@@ -8,7 +8,7 @@ A Windows companion for saving and switching Codex accounts, with encrypted loca
 
 Download the latest **-setup.exe** from [GitHub Releases](https://github.com/nickfouf/ChatGPTAccountSwitcher/releases/latest). The per-user installer adds a Start menu shortcut and uninstaller and installs Microsoft WebView2 if missing. Supported release target: Windows 10/11 x64.
 
-The first public release must be published before this download link and automatic updates become available. Update packages have cryptographic signatures, but the installer currently has **no Windows Authenticode certificate**. Windows may identify it as an unknown publisher.
+Update packages have cryptographic signatures, but the installer currently has **no Windows Authenticode certificate**. Windows may identify it as an unknown publisher.
 
 Install and open the official Windows Codex app at least once. This application does not install Codex.
 
@@ -60,6 +60,8 @@ Build a signed installer using the existing external signing key:
     npm run release:build
 
 The ignored release/ folder contains the installer, signature, updater manifest, checksums, release notes, and license notices. Local builds do not publish anything. See [RELEASING.md](docs/RELEASING.md) for first publication and key management.
+
+After committing a new version on `main`, publish it using your GitHub sign-in with `npm run release:publish`. The helper waits for GitHub's checks and installer build before publishing the release. Local signing configuration is read from the ignored `.env`; only the path to the external key file is needed.
 
 ## Project structure
 

@@ -5,6 +5,8 @@ import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 process.chdir(fileURLToPath(new URL('..', import.meta.url)));
+// Existing process variables (including CI secrets) take precedence over local configuration.
+if (fs.existsSync('.env')) process.loadEnvFile('.env');
 const readJSON = file => JSON.parse(fs.readFileSync(file, 'utf8'));
 const writeJSON = (file, value) => fs.writeFileSync(file, JSON.stringify(value, null, 2) + '\n');
 const pkg = readJSON('package.json');

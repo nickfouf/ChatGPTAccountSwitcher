@@ -17,7 +17,8 @@
     "version:prepare": "node scripts/release.mjs bump",
     "signing:setup": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/setup-signing.ps1",
     "licenses:generate": "node scripts/licenses.mjs",
-    "test:release": "node --test scripts/release.test.mjs"
+    "test:release": "node --test scripts/release.test.mjs",
+    "release:publish": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/publish-release.ps1"
   },
   "devDependencies": {
     "@playwright/test": "^1.64.1",

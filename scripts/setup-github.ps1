@@ -5,8 +5,9 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 if ($Repository -notmatch '^[\w.-]+/[\w.-]+$') { throw 'Expected owner/repository.' }
-if (!(Get-Command gh -ErrorAction SilentlyContinue)) { throw 'Install GitHub CLI with: winget install --id GitHub.cli --exact. Then run gh auth login and rerun this script.' }
-& gh auth status
+. (Join-Path $PSScriptRoot 'github-cli.ps1')
+$ghExe = Find-GitHubCli
+& $ghExe auth status
 if ($LASTEXITCODE -ne 0) { throw 'Run gh auth login, then rerun this script.' }
 $projectRoot = Split-Path -Parent $PSScriptRoot
 Push-Location $projectRoot
@@ -20,14 +21,14 @@ try {
     if ($config.plugins.updater.endpoints[0] -ne $expectedEndpoint) { throw 'The repository must match the configured updater endpoint.' }
     if (!(Test-Path -LiteralPath "$keyFile.pub")) { throw 'Restore the matching public key file beside the private key.' }
     if ((Get-Content -LiteralPath "$keyFile.pub" -Raw).Trim() -ne $config.plugins.updater.pubkey) { throw 'The local signing identity does not match the app public key.' }
-    & gh repo view $Repository --json nameWithOwner 2>$null | Out-Null
+    & $ghExe repo view $Repository --json nameWithOwner 2>$null | Out-Null
     if ($LASTEXITCODE -ne 0) {
         if (!$CreateRepository) { throw 'Repository not found. Rerun with -CreateRepository to create the configured public repository.' }
-        & gh repo create $Repository --public --description 'A Windows companion for saving and switching Codex accounts, with encrypted storage and signed updates.'
+        & $ghExe repo create $Repository --public --description 'A Windows companion for saving and switching Codex accounts, with encrypted storage and signed updates.'
         if ($LASTEXITCODE -ne 0) { throw 'Could not create the public repository.' }
     }
     # Reading from a file keeps the key out of arguments, shell history, and logs.
-    $secretProcess = Start-Process gh -ArgumentList @('secret','set','TAURI_SIGNING_PRIVATE_KEY','--repo',$Repository) -RedirectStandardInput $keyFile -WindowStyle Hidden -Wait -PassThru
+    $secretProcess = Start-Process -FilePath $ghExe -ArgumentList @('secret','set','TAURI_SIGNING_PRIVATE_KEY','--repo',$Repository) -RedirectStandardInput $keyFile -WindowStyle Hidden -Wait -PassThru
     if ($secretProcess.ExitCode -ne 0) { throw 'Could not upload the signing secret. Check repository access.' }
     Write-Host "Release signing configured for $Repository."
     Write-Host 'Back up the private key securely; GitHub secrets cannot be downloaded later.'

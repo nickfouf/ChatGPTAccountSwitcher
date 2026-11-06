@@ -37,6 +37,24 @@ test('version preparation updates every manifest and rejects unrevised release n
   assert.equal(run('validate',['v9.0.0']).status,0);
   assert.notEqual(run('bump',['8.0.0']).status,0);
 });
+test('local environment is loaded without overriding authenticated CI configuration',t=>{
+  const {root,run}=fixture(t);
+  fs.writeFileSync(path.join(root,'.env'),'GITHUB_REPOSITORY=somebody/another-repository\n');
+  assert.equal(run('validate').status,0);
+  const fromFileEnv={...process.env};
+  delete fromFileEnv.GITHUB_REPOSITORY;
+  delete fromFileEnv.RELEASE_TAG;
+  const fromFile=spawnSync(process.execPath,[path.join(root,'scripts/release.mjs'),'validate'],{cwd:root,encoding:'utf8',env:fromFileEnv});
+  assert.notEqual(fromFile.status,0);
+  assert.match(fromFile.stderr,/another-repository/);
+  fs.writeFileSync(path.join(root,'.env'),'RELEASE_TAG=v9.9.9\n');
+  const processEnv={...process.env,GITHUB_REPOSITORY:'nickfouf/ChatGPTAccountSwitcher'};
+  delete processEnv.RELEASE_TAG;
+  const local=spawnSync(process.execPath,[path.join(root,'scripts/release.mjs'),'validate'],{cwd:root,encoding:'utf8',env:processEnv});
+  assert.notEqual(local.status,0);
+  assert.match(local.stderr,/does not match/);
+  assert.equal(run('validate').status,0);
+});
 test('release manifest preserves signatures, cumulative notes, encoded URLs, and accurate checksums',t=>{
   const {root,run}=fixture(t);
   const bundle=path.join(root,'bundle');fs.mkdirSync(bundle);
