@@ -1,6 +1,6 @@
 # ChatGPT Account Switcher for Codex
 
-**Switch Codex accounts. Keep your flow.**
+**Your Codex accounts, in one place.**
 
 Save your accounts, see remaining usage at a glance, and switch with a confirmed Codex restart. Credentials stay encrypted on your computer. Free, open source, and available in 32 languages.
 
